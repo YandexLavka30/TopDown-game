@@ -1,4 +1,4 @@
-name: Unity Build and Test
+name: Unity Build
 
 on:
   push:
@@ -7,54 +7,32 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build-and-test:
+  build:
     runs-on: windows-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: '8.0.x'
     
-    - name: Restore dependencies
+    - name: Restore NuGet packages
       run: dotnet restore TopDown-game.sln
-      continue-on-error: true
+      working-directory: .
     
-    - name: Build solution
-      run: dotnet build TopDown-game.sln --configuration Release --no-restore
-      continue-on-error: true
+    - name: Build C# scripts
+      run: dotnet build TopDown-game.sln --configuration Release
+      working-directory: .
+      continue-on-error: false
     
-    - name: Check compilation status
+    - name: Build success check
       run: |
-        Write-Host "Checking build results..."
-        if (Test-Path "TopDown-game.sln") {
-          Write-Host "✅ Solution file found"
-        } else {
-          Write-Host "⚠️ Solution file not found"
-        }
-    
-    - name: Find and list test files
-      run: |
-        Write-Host "Looking for test files..."
-        Get-ChildItem -Path . -Filter "*test*.cs" -Recurse | ForEach-Object {
-          Write-Host "Found test: $($_.FullName)"
-        }
-    
-    - name: Simple test check
-      run: |
-        # Проверяем, есть ли тестовые методы в коде
-        $testCount = (Get-ChildItem -Path . -Filter "*.cs" -Recurse | Select-String -Pattern "\[Test\]|\[UnityTest\]").Count
-        if ($testCount -gt 0) {
-          Write-Host "✅ Found $testCount test methods"
-        } else {
-          Write-Host "⚠️ No test methods found. Add [Test] attributes to your test code."
-        }
-    
-    - name: Final result
-      run: |
-        Write-Host "================================"
-        Write-Host "✅ Workflow completed successfully"
-        Write-Host "================================"
+        echo "========================================="
+        echo "✅ Build completed successfully!"
+        echo "========================================="
